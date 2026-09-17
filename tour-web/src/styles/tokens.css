@@ -1,0 +1,122 @@
+/* 设计令牌：数值见 docs/前端设计规范.md。深色模式通过 html[data-theme="dark"] 切换 */
+:root {
+  --bg: #F3F6F5;
+  --surface: #FBFCFC;
+  --surface-2: #EDF2F0;
+  --surface-3: #E3EAE7;
+  --line: #D9E2DF;
+  --line-strong: #C5D1CD;
+  --text: #14201D;
+  --text-2: #45534F;
+  --text-3: #5E6D69;
+  --accent: #0B7F6B;
+  --accent-hover: #096C5B;
+  --accent-soft: #E0F0EB;
+  --accent-ink: #086354;
+  --on-accent: #F7FBFA;
+  --warn: #9A6310;
+  --warn-soft: #FBF1DE;
+  --shadow: 0 1px 2px rgba(16, 40, 35, .05), 0 8px 24px rgba(16, 40, 35, .06);
+  --shadow-lift: 0 2px 6px rgba(16, 40, 35, .06), 0 18px 40px rgba(16, 40, 35, .11);
+  --focus: 0 0 0 3px rgba(11, 127, 107, .28);
+
+  --map-land: #EDF1EE;
+  --map-grid: #E2E8E5;
+  --map-water: #BCDCE2;
+  --map-water-ink: #4F8792;
+  --map-case: #FFFFFF;
+
+  --il-sky-1: #CDEBE6;
+  --il-sky-2: #F3FAF8;
+  --il-sun: #FFF4E0;
+  --il-far: #BCDDD5;
+  --il-mid: #93CBBC;
+  --il-near: #62B19C;
+  --il-deep: #3E8F7B;
+  --il-ink: #2C5E54;
+  --il-ink-2: #3F786C;
+  --il-water-1: #D7EFEA;
+  --il-water-2: #9FD4C9;
+  --il-line: #FFFFFF;
+  --il-wall: #F2F8F6;
+  --il-window: #E4F2EE;
+  --il-warm: #EE9A73;
+  --il-warm-2: #F7CDA5;
+  --il-glow: #F7CDA5;
+  --il-glow-o: .28;
+
+  /* 小萧头像 */
+  --xx-bg: #E0F0EB;
+  --xx-skin: #F6D7C3;
+  --xx-skin-shade: #EBBFA6;
+  --xx-hair: #23433C;
+  --xx-line: #1C302B;
+  --xx-blush: #F09A86;
+  --xx-shirt: #0B7F6B;
+  --xx-collar: #F7FBFA;
+
+  --r-card: 16px;
+  --r-thumb: 10px;
+  --r-pill: 999px;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --font: "HarmonyOS Sans SC", "MiSans", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  --bg: #0C1412;
+  --surface: #121C1A;
+  --surface-2: #182421;
+  --surface-3: #1F2D29;
+  --line: #25342F;
+  --line-strong: #33453F;
+  --text: #E4ECE9;
+  --text-2: #B1BFBA;
+  --text-3: #92A19C;
+  --accent: #3FC2A5;
+  --accent-hover: #5DD0B6;
+  --accent-soft: #15302A;
+  --accent-ink: #7EDDC6;
+  --on-accent: #06211B;
+  --warn: #E6B35C;
+  --warn-soft: #2E2412;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 8px 24px rgba(0, 0, 0, .28);
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, .4), 0 18px 40px rgba(0, 0, 0, .4);
+  --focus: 0 0 0 3px rgba(63, 194, 165, .35);
+
+  --map-land: #141E1C;
+  --map-grid: #1A2623;
+  --map-water: #16303A;
+  --map-water-ink: #6FA7B3;
+  --map-case: #0C1412;
+
+  --il-sky-1: #1B433B;
+  --il-sky-2: #0F201D;
+  --il-sun: #E6F1ED;
+  --il-far: #1F3E37;
+  --il-mid: #28524A;
+  --il-near: #306A5A;
+  --il-deep: #3E826F;
+  --il-ink: #0A1513;
+  --il-ink-2: #122822;
+  --il-water-1: #183B36;
+  --il-water-2: #0D2320;
+  --il-line: #6FAEA1;
+  --il-wall: #2A3A35;
+  --il-window: #F0C39A;
+  --il-warm: #E0936C;
+  --il-warm-2: #EFC29A;
+  --il-glow: #A8E0D2;
+  --il-glow-o: .12;
+
+  --xx-bg: #25554B;
+  --xx-skin: #F1D0BC;
+  --xx-skin-shade: #DDB199;
+  --xx-hair: #12241F;
+  --xx-line: #10201C;
+  --xx-blush: #E88C78;
+  --xx-shirt: #3FC2A5;
+  --xx-collar: #E4ECE9;
+  color-scheme: dark;
+}

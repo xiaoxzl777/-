@@ -1,0 +1,33 @@
+/* ---------- 后台 ---------- */
+.admin { min-height: 100vh; }
+.admin .admin-sider { border-right: 1px solid var(--line); background: var(--surface); }
+.admin .admin-sider .ant-menu { border-inline-end: 0 !important; background: transparent; }
+.admin-brand { height: 64px; padding: 0 22px; font-size: 17px; }
+.admin .admin-header {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  height: 64px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line); line-height: normal;
+}
+.admin-user { margin-right: 8px; color: var(--text-2); font-size: 14px; }
+.admin .admin-content { padding: 24px; background: var(--bg); }
+.admin-page { max-width: 1200px; margin: 0 auto; }
+.admin-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 18px; }
+.admin-head h1 { margin: 0; font-size: 24px; line-height: 1.35; }
+.admin-head p { margin: 4px 0 0; color: var(--text-3); font-size: 14px; }
+.admin-filters { margin-bottom: 16px; }
+.admin-poi-name { display: flex; align-items: center; gap: 10px; }
+.admin-poi-name a { color: var(--text); font-weight: 600; }
+.admin-poi-name a:hover { color: var(--accent-ink); }
+.admin-thumb { width: 48px; height: 36px; border-radius: 8px; flex: none; }
+.admin-card { margin-bottom: 20px; }
+.poi-edit { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 28px; align-items: start; }
+.poi-edit-preview { position: sticky; top: 24px; }
+.poi-edit-preview .photo { aspect-ratio: 4 / 3; border-radius: var(--r-card); }
+.poi-edit-preview p { margin: 8px 0 0; font-size: 13px; }
+.rule-row { margin-bottom: 14px; padding: 14px 16px 0; border-radius: var(--r-card); background: var(--surface-2); }
+.closed-form { margin-bottom: 16px; row-gap: 8px; }
+
+@media (max-width: 900px) {
+  .admin .admin-content { padding: 16px; }
+  .poi-edit { grid-template-columns: minmax(0, 1fr); }
+  .poi-edit-preview { position: static; max-width: 320px; }
+}

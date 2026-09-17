@@ -1,0 +1,201 @@
+/* 基础样式和通用组件 */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  min-width: 320px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+img, svg { display: block; }
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+h1, h2, h3, p { text-wrap: pretty; }
+[hidden] { display: none !important; }
+
+.num { font-variant-numeric: tabular-nums; }
+.nw { white-space: nowrap; }
+.ic { display: inline-block; flex: none; vertical-align: -0.18em; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 48px; }
+.muted { color: var(--text-3); }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* ---------- 按钮 ---------- */
+.btn {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 44px; padding: 0 22px; border: 0; border-radius: var(--r-pill);
+  background: var(--accent); color: var(--on-accent);
+  font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none; cursor: pointer;
+  transition: background-color .16s var(--ease), transform .16s var(--ease), box-shadow .16s var(--ease), color .16s var(--ease);
+}
+.btn:hover { background: var(--accent-hover); color: var(--on-accent); }
+.btn:active { transform: scale(.98); }
+.btn:disabled { cursor: not-allowed; opacity: .55; transform: none; }
+.btn.is-secondary { background: var(--surface); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.btn.is-secondary:hover { background: var(--surface-2); color: var(--text); }
+.btn.is-small { height: 36px; padding: 0 16px; font-size: 14px; }
+.btn.is-done { background: var(--accent-soft); color: var(--accent-ink); box-shadow: none; }
+.btn:not(.is-secondary):not(.is-done)::after {
+  content: ""; position: absolute; top: -2px; bottom: -2px; left: 0; width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .35), transparent);
+  transform: translateX(-160%) skewX(-18deg); pointer-events: none;
+}
+.btn:focus-visible, .icon-btn:focus-visible, .chip:focus-visible, .tab:focus-visible,
+.link:focus-visible, .site-link:focus-visible, .photo.is-link:focus-visible {
+  outline: none; box-shadow: var(--focus);
+}
+
+.icon-btn {
+  display: inline-grid; place-items: center; flex: none;
+  width: 40px; height: 40px; padding: 0; border: 0; border-radius: var(--r-pill);
+  background: transparent; color: var(--text-2); cursor: pointer; text-decoration: none;
+  transition: background-color .16s var(--ease), color .16s var(--ease), transform .16s var(--ease);
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+.icon-btn:active { transform: scale(.94); }
+.icon-btn:disabled { cursor: not-allowed; opacity: .45; }
+.icon-btn.is-outline { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.icon-btn.is-accent { background: var(--accent); color: var(--on-accent); }
+.icon-btn.is-accent:hover { background: var(--accent-hover); color: var(--on-accent); }
+
+/* ---------- 标签、胶囊、链接 ---------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  height: 34px; padding: 0 14px; border: 0; border-radius: var(--r-pill);
+  background: var(--surface-2); color: var(--text-2);
+  font-size: 14px; white-space: nowrap; cursor: pointer;
+  transition: background-color .16s var(--ease), color .16s var(--ease), transform .24s var(--ease);
+}
+.chip:hover { background: var(--surface-3); color: var(--text); }
+.chip.is-outline { background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong); }
+.chip.is-outline:hover { background: var(--surface-2); }
+.chip.is-static { cursor: default; }
+.chip.is-static:hover { transform: none; background: transparent; color: var(--text-2); }
+.chip .chip-x {
+  display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: -6px; padding: 0;
+  border: 0; border-radius: 50%; background: transparent; color: var(--text-3); cursor: pointer;
+}
+.chip .chip-x:focus-visible { outline: none; box-shadow: var(--focus); }
+.chip .chip-x:hover { background: var(--line); color: var(--text); }
+
+.tag {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 10px;
+  border-radius: var(--r-pill); box-shadow: inset 0 0 0 1px var(--line-strong);
+  color: var(--text-2); font-size: 12px; white-space: nowrap;
+}
+.tag.is-accent { box-shadow: none; background: var(--accent-soft); color: var(--accent-ink); }
+.tag.is-muted { box-shadow: none; background: var(--surface-2); color: var(--text-3); }
+
+.status {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
+  border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent-ink);
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+
+.tabs { display: inline-flex; gap: 4px; max-width: 100%; padding: 4px; border-radius: var(--r-pill); background: var(--surface-2); }
+.tab {
+  height: 32px; padding: 0 14px; border: 0; border-radius: var(--r-pill);
+  background: transparent; color: var(--text-2); font-size: 14px; white-space: nowrap; cursor: pointer;
+  transition: background-color .16s var(--ease), color .16s var(--ease);
+}
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow); }
+
+.link {
+  display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none;
+  color: var(--accent-ink); font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer;
+}
+.link:hover { color: var(--accent); }
+.site-link { display: inline-flex; align-items: center; gap: 2px; color: var(--accent-ink); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.site-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; color: var(--text-3); font-size: 13px; }
+.meta > span { display: inline-flex; align-items: center; gap: 5px; }
+
+.panel { border-radius: var(--r-card); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+
+/* ---------- 插画容器 ---------- */
+.photo { position: relative; overflow: hidden; background: var(--surface-2); }
+.photo > svg { width: 100%; height: 100%; transition: transform .48s var(--ease); }
+.photo.is-link { display: block; cursor: pointer; }
+.photo.is-link:hover > svg { transform: scale(1.04); }
+
+/* 插画配色全部取自令牌，深色模式自动换成夜景 */
+.il .s-sky1 { stop-color: var(--il-sky-1); } .il .s-sky2 { stop-color: var(--il-sky-2); }
+.il .s-wat1 { stop-color: var(--il-water-1); } .il .s-wat2 { stop-color: var(--il-water-2); }
+.il .f-sun { fill: var(--il-sun); } .il .f-glow { fill: var(--il-glow); opacity: var(--il-glow-o); }
+.il .f-far { fill: var(--il-far); } .il .f-mid { fill: var(--il-mid); } .il .f-near { fill: var(--il-near); } .il .f-deep { fill: var(--il-deep); }
+.il .f-ink { fill: var(--il-ink); } .il .f-ink2 { fill: var(--il-ink-2); } .il .f-wall { fill: var(--il-wall); } .il .f-win { fill: var(--il-window); }
+.il .f-warm { fill: var(--il-warm); } .il .f-warm2 { fill: var(--il-warm-2); }
+.il .s-line { fill: none; stroke: var(--il-line); stroke-linecap: round; opacity: .7; }
+.il .s-ink { fill: none; stroke: var(--il-ink); stroke-linecap: round; }
+.il .s-deep { fill: none; stroke: var(--il-deep); stroke-linecap: round; }
+.il .s-warm { fill: none; stroke: var(--il-warm); stroke-linecap: round; }
+
+/* ---------- 空状态、加载 ---------- */
+.empty { display: grid; justify-items: center; gap: 10px; padding: 48px 16px; text-align: center; color: var(--text-3); }
+.empty .photo { width: 220px; aspect-ratio: 4 / 3; border-radius: var(--r-card); }
+.empty h3 { margin: 6px 0 0; color: var(--text); font-size: 17px; font-weight: 600; }
+.empty p { margin: 0; max-width: 26em; }
+.skeleton { border-radius: var(--r-card); background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface-3) 50%, var(--surface-2) 70%); background-size: 300% 100%; }
+
+/* ---------- 动效（系统开启“减少动态效果”时全部关闭） ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { animation: reveal .52s var(--ease) both; animation-delay: calc(var(--i, 0) * 70ms); }
+  .skeleton { animation: shimmer 1.4s linear infinite; }
+  .btn .ic-arrow, .link .ic { transition: transform .3s var(--ease); }
+  .btn:hover .ic-arrow, .link:hover .ic { transform: translateX(4px); }
+  .btn:not(.is-secondary):not(.is-done):not(:disabled):hover::after { transform: translateX(320%) skewX(-18deg); transition: transform .75s var(--ease); }
+  .chip:hover { transform: translateY(-2px); }
+  .site-link .ic { transition: transform .24s var(--ease); }
+  .site-link:hover .ic { transform: translate(2px, -2px); }
+
+  /* 插画：鼠标悬停在卡片上时才动 */
+  .il .a-sun, .il .a-birds, .il .a-boat, .il .a-steam, .il .a-ripple, .il .a-walker, .il .a-bloom, .il .a-ring, .il .a-shop, .il .a-cable, .il .a-cloud {
+    transition: transform 1.4s var(--ease), opacity 1.4s var(--ease);
+  }
+  .il .a-tree, .il .a-bloom, .il .a-lotus, .il .a-lantern, .il .a-sway, .il .a-ring, .il .a-neck { transform-box: fill-box; }
+  .il .a-tree, .il .a-bloom, .il .a-lotus { transform-origin: 50% 100%; }
+  .il .a-lantern, .il .a-sway { transform-origin: 50% 0; }
+  .il .a-neck { transform-origin: 0% 100%; }
+  .il .a-ring { transform-origin: 50% 50%; }
+  .anim-host:hover .il .a-sun { transform: translateY(-10px); }
+  .anim-host:hover .il .a-birds { transform: translate(22px, -12px); }
+  .anim-host:hover .il .a-boat { transform: translateX(18px); }
+  .anim-host:hover .il .a-steam { transform: translateY(-10px); opacity: .2; }
+  .anim-host:hover .il .a-ripple { transform: translateX(10px); }
+  .anim-host:hover .il .a-walker { transform: translateX(10px); }
+  .anim-host:hover .il .a-cable { transform: translate(34px, -8px); }
+  .anim-host:hover .il .a-cloud { transform: translateX(-16px); }
+  .anim-host:hover .il .a-bloom { transform: scale(1.08); }
+  .anim-host:hover .il .a-ring { transform: scale(1.12); opacity: .35; }
+  .anim-host:hover .il .a-shop { opacity: .75; }
+  .anim-host:hover .il .a-tree { animation: tree 2.6s ease-in-out infinite; }
+  .anim-host:hover .il .a-lotus { animation: tree 2.2s ease-in-out infinite; }
+  .anim-host:hover .il .a-sway { animation: sway 2.4s ease-in-out infinite; }
+  .anim-host:hover .il .a-lantern { animation: swing 1.6s ease-in-out infinite; }
+  .anim-host:hover .il .a-neck { animation: neck 2.4s ease-in-out infinite; }
+  .anim-host:hover .il .a-twinkle { animation: twinkle 1.2s ease-in-out infinite; }
+}
+@keyframes reveal { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -200% 0; } }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+@keyframes pulse { 0% { transform: scale(.8); opacity: .35; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes tree { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes sway { 0%, 100% { transform: skewX(-3deg); } 50% { transform: skewX(3deg); } }
+@keyframes swing { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+@keyframes neck { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-6deg); } }
+@keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes dots { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-4px); opacity: 1; } }
+
+@media (max-width: 720px) {
+  .wrap { padding: 0 16px; }
+}

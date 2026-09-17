@@ -1,19 +1,98 @@
 # 城市文旅行程规划平台（毕业设计）
 
-面向广州自由行游客的行程规划网站。用户和 AI 助手“小萧”聊出行想法，小萧先分辨是闲聊还是要规划行程，再结合景点开放时间、路程和预算，排出一份当天走得通的行程。
+面向广州自由行游客的行程规划网站，网站名“悠行”。用户和 AI 助手“小萧”聊出行想法，小萧先分辨是闲聊还是要规划行程，再结合景点开放时间、路程和预算，排出一份当天走得通的行程。
 
 ## 技术栈
 
-- 后端：Spring Boot + MyBatis + MySQL
-- 前端：React + TypeScript + Ant Design
-- AI 规划模块：Python FastAPI + DeepSeek（没配 Key 时用规则解析）
+| 部分 | 目录 | 技术 | 端口 |
+|---|---|---|---|
+| 前端 | `tour-web` | React 19 + TypeScript + Vite + Ant Design | 5173 |
+| 后端 | `tour-server` | Spring Boot 3.5 + MyBatis + MySQL 8 | 8081 |
+| AI 服务 | `ai-service` | Python FastAPI + DeepSeek（没配 Key 时用规则和模板） | 8000 |
+
+浏览器只访问后端；后端把消息和景点数据交给 AI 服务，AI 服务识别意图、排行程、写小萧的回复。
 
 ## 当前进度
 
 - [x] 前置设计：需求分析、数据库设计、接口文档、前端设计规范
-- [ ] 第一版：基本逻辑（登录、景点浏览、AI 规划一日行程、保存行程、后台维护景点）
-- [ ] 第二批：门票预约、多日行程、对话修改
+- [x] 第一版：登录注册、景点浏览、和小萧对话（主动问候、意图识别、一日行程规划、接着说修改）、保存行程、后台维护景点
+- [ ] 第二批：门票预约、多日行程、更聪明的对话修改
 - [ ] 最后一批（可选）：游记社区
+
+## 环境要求
+
+- JDK 17 或以上（不用装 Maven，项目自带 Maven Wrapper）
+- Node.js 20.19 以上或 22.12 以上
+- Python 3.10 以上
+- MySQL 8
+
+## 启动步骤
+
+三个部分各开一个终端，按下面顺序启动。以下命令以 Windows 为例。
+
+### 1. 配置数据库
+
+复制 `tour-server/src/main/resources/application-local.yml.example`，改名为 `application-local.yml`，填上本机 MySQL 的账号和密码。这个文件不会提交到 git。
+
+不用手动建库：后端第一次启动时会自动创建 `tour_planner` 库和表，并导入示例数据，不会动其他库。
+
+### 2. 启动 AI 服务
+
+```bash
+cd ai-service
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --port 8000
+```
+
+要接 DeepSeek 时，复制 `.env.example` 为 `.env`，填上 `DEEPSEEK_API_KEY` 后重启。访问 http://localhost:8000/health 可以看到当前是 `deepseek` 还是 `rule`（规则）模式。
+
+### 3. 启动后端
+
+```bash
+cd tour-server
+.\mvnw.cmd spring-boot:run
+```
+
+第一次运行会下载 Maven 和依赖，时间稍长。看到 `Started TourServerApplication` 就启动好了。
+
+### 4. 启动前端
+
+```bash
+cd tour-web
+npm install
+npm run dev
+```
+
+打开终端里显示的地址（默认 http://localhost:5173，被占用时会自动换成 5174 等）。
+
+## 账号
+
+- 游客：在网站上自己注册。
+- 管理员：打开 `/admin/login`，账号 `admin`，密码 `88888888`（写在 `application.yml` 的 `tour.admin` 里，不存数据库）。
+
+## 测试
+
+```bash
+# AI 服务：意图识别、条件理解、排程、接口
+cd ai-service
+.venv\Scripts\python -m pytest
+
+# 后端：管理端和用户端的令牌权限、参数校验（不需要数据库）
+cd tour-server
+.\mvnw.cmd test
+
+# 前端：类型检查并打包
+cd tour-web
+npm run build
+```
+
+## 常见问题
+
+- **小萧说“暂时不在线”**：AI 服务没启动，或者 8000 端口被占用。
+- **后端启动报 Access denied**：`application-local.yml` 里的 MySQL 账号密码不对。
+- **npm 或 pip 下载慢**：可以换国内镜像，比如 `npm config set registry https://registry.npmmirror.com`、`pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple`。
 
 ## 文档
 
@@ -23,4 +102,4 @@
 | [数据库设计](docs/数据库设计.md) | 第一版 7 张表 |
 | [接口文档](docs/接口文档.md) | 后端分层、用户端和管理端接口、Python AI 服务 |
 | [前端设计规范](docs/前端设计规范.md) | 颜色、字体、插画、小萧形象、动效、页面布局 |
-| [风格预览](docs/design/清新文旅风-精修版.html) | 下载后用浏览器打开（内容是杭州，仅用于展示风格） |
+| [风格预览](docs/design/清新文旅风-精修版.html) | 早期的风格预览，下载后用浏览器打开（内容是杭州，仅用于展示风格） |
