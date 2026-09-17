@@ -1,0 +1,26 @@
+# 本地配置与密钥（不入库，仓库里只放 .example 模板）
+application-local.yml
+.env
+
+# Java
+target/
+*.class
+
+# 前端
+node_modules/
+dist/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# 编辑器与系统
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
