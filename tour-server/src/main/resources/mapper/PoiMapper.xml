@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tour.mapper.PoiMapper">
+
+    <sql id="pageWhere">
+        <where>
+            <if test="onlineOnly">status = 'ONLINE'</if>
+            <if test="!onlineOnly and q.status != null and q.status != ''">AND status = #{q.status}</if>
+            <if test="q.districtId != null">AND district_id = #{q.districtId}</if>
+            <if test="q.type != null and q.type != ''">AND type = #{q.type}</if>
+            <if test="q.keyword != null and q.keyword != ''">AND name LIKE CONCAT('%', #{q.keyword}, '%')</if>
+        </where>
+    </sql>
+
+    <select id="selectPage" resultType="com.tour.pojo.entity.Poi">
+        SELECT * FROM poi
+        <include refid="pageWhere"/>
+        ORDER BY CASE WHEN type = 'SCENIC' THEN 0 ELSE 1 END, rating DESC, id
+        LIMIT #{q.size} OFFSET #{q.offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM poi
+        <include refid="pageWhere"/>
+    </select>
+
+    <select id="selectByIds" resultType="com.tour.pojo.entity.Poi">
+        SELECT * FROM poi WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO poi (type, name, district_id, admin_area, address, lng, lat, intro, illustration, official_url,
+                         stay_minutes, full_day, ticket_price, avg_cost, rating, tags, status)
+        VALUES (#{type}, #{name}, #{districtId}, #{adminArea}, #{address}, #{lng}, #{lat}, #{intro}, #{illustration},
+                #{officialUrl}, #{stayMinutes}, #{fullDay}, #{ticketPrice}, #{avgCost}, #{rating}, #{tags}, #{status})
+    </insert>
+
+    <update id="update">
+        UPDATE poi
+        SET type         = #{type},
+            name         = #{name},
+            district_id  = #{districtId},
+            admin_area   = #{adminArea},
+            address      = #{address},
+            lng          = #{lng},
+            lat          = #{lat},
+            intro        = #{intro},
+            illustration = #{illustration},
+            official_url = #{officialUrl},
+            stay_minutes = #{stayMinutes},
+            full_day     = #{fullDay},
+            ticket_price = #{ticketPrice},
+            avg_cost     = #{avgCost},
+            rating       = #{rating},
+            tags         = #{tags}
+        WHERE id = #{id}
+    </update>
+</mapper>

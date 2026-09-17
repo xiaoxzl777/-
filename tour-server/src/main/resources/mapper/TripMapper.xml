@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tour.mapper.TripMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO trip (user_id, title, trip_date, prompt, start_time, adults, seniors, children, budget, pace,
+                          district_ids, must_poi_ids, avoid_poi_ids, interests, total_cost)
+        VALUES (#{userId}, #{title}, #{tripDate}, #{prompt}, #{startTime}, #{adults}, #{seniors}, #{children},
+                #{budget}, #{pace}, #{districtIds}, #{mustPoiIds}, #{avoidPoiIds}, #{interests}, #{totalCost})
+    </insert>
+
+    <select id="selectPageByUser" resultType="com.tour.pojo.vo.TripListVO">
+        SELECT t.id,
+               t.title,
+               t.trip_date,
+               t.total_cost,
+               t.created_at,
+               (SELECT COUNT(DISTINCT i.poi_id)
+                FROM trip_item i
+                         JOIN poi p ON p.id = i.poi_id
+                WHERE i.trip_id = t.id AND p.type = 'SCENIC') AS stop_count,
+               (SELECT p.illustration
+                FROM trip_item i
+                         JOIN poi p ON p.id = i.poi_id
+                WHERE i.trip_id = t.id AND p.type = 'SCENIC'
+                ORDER BY i.seq
+                LIMIT 1)                                      AS cover
+        FROM trip t
+        WHERE t.user_id = #{userId}
+        ORDER BY t.created_at DESC, t.id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+</mapper>

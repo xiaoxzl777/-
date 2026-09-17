@@ -1,0 +1,38 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: tour-server
+  profiles:
+    # 读取 application-local.yml：数据库账号密码写在那里，这个文件不提交到 git
+    active: local
+  datasource:
+    url: jdbc:mysql://localhost:3306/tour_planner?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password:
+  sql:
+    init:
+      # 每次启动执行建表脚本（表已存在时跳过）；示例数据由 DataInitializer 在库为空时导入
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      encoding: UTF-8
+  jackson:
+    time-zone: Asia/Shanghai
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+tour:
+  # 管理员只有一个固定账号（毕设演示用），登录时直接核对，不存数据库
+  admin:
+    username: admin
+    password: "88888888"
+  jwt:
+    secret: tour-planner-demo-jwt-secret-change-me-0123456789
+    expire-days: 7
+  ai:
+    base-url: http://localhost:8000
+    timeout-seconds: 20

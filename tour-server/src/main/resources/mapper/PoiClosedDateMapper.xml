@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tour.mapper.PoiClosedDateMapper">
+
+    <select id="selectByPoiId" resultType="com.tour.pojo.entity.PoiClosedDate">
+        SELECT * FROM poi_closed_date
+        WHERE poi_id = #{poiId}
+        <if test="from != null">AND closed_date &gt;= #{from}</if>
+        ORDER BY closed_date
+    </select>
+
+    <select id="selectByPoiIds" resultType="com.tour.pojo.entity.PoiClosedDate">
+        SELECT * FROM poi_closed_date
+        WHERE poi_id IN
+        <foreach collection="poiIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        <if test="from != null">AND closed_date &gt;= #{from}</if>
+        ORDER BY poi_id, closed_date
+    </select>
+</mapper>

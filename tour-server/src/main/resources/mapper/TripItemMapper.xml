@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tour.mapper.TripItemMapper">
+
+    <insert id="insertBatch">
+        INSERT INTO trip_item (trip_id, seq, poi_id, start_time, end_time, cost, next_mode, next_minutes, next_meters,
+                               next_cost) VALUES
+        <foreach collection="items" item="it" separator=",">
+            (#{it.tripId}, #{it.seq}, #{it.poiId}, #{it.startTime}, #{it.endTime}, #{it.cost}, #{it.nextMode},
+             #{it.nextMinutes}, #{it.nextMeters}, #{it.nextCost})
+        </foreach>
+    </insert>
+
+    <select id="selectByTripId" resultType="com.tour.pojo.vo.PlanItemVO">
+        SELECT i.seq,
+               i.poi_id,
+               p.name,
+               p.type,
+               p.illustration,
+               p.lng,
+               p.lat,
+               p.official_url,
+               i.start_time,
+               i.end_time,
+               i.cost,
+               i.next_mode,
+               i.next_minutes,
+               i.next_meters,
+               i.next_cost
+        FROM trip_item i
+                 JOIN poi p ON p.id = i.poi_id
+        WHERE i.trip_id = #{tripId}
+        ORDER BY i.seq
+    </select>
+</mapper>

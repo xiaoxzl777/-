@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tour.mapper.PoiOpenRuleMapper">
+
+    <select id="selectByPoiIds" resultType="com.tour.pojo.entity.PoiOpenRule">
+        SELECT * FROM poi_open_rule WHERE poi_id IN
+        <foreach collection="poiIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        ORDER BY poi_id, id
+    </select>
+
+    <insert id="insertBatch">
+        INSERT INTO poi_open_rule (poi_id, weekdays, open_time, close_time, last_entry_time) VALUES
+        <foreach collection="rules" item="r" separator=",">
+            (#{r.poiId}, #{r.weekdays}, #{r.openTime}, #{r.closeTime}, #{r.lastEntryTime})
+        </foreach>
+    </insert>
+</mapper>
