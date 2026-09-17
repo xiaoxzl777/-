@@ -3,7 +3,8 @@
 规则见需求分析 3.2 和第 5 节：
 - 到达时已开门、没过停止入场时间，离开时不晚于关门，当天不是闭馆日；
 - 累计花费不超过预算，结束时间不超过节奏规定的时间；
-- 11:30 到 13:30 之间安排一次午餐；一天最多跨两个片区；
+- 11:30 到 13:30 之间在附近安排一次午餐；
+- 说了想去的片区就只在这些片区里挑，没说时一天最多跨两个片区；
 - 用户点名要去全天型景点时，当天只排它，外加午餐。
 """
 from __future__ import annotations
@@ -19,6 +20,7 @@ from .timeutil import to_hhmm, to_minutes, weekday_name
 LUNCH_START = 11 * 60 + 30   # 午餐最早 11:30 开始
 LUNCH_LATEST = 13 * 60 + 30  # 最晚 13:30 开始
 LUNCH_MINUTES = 60
+LUNCH_MAX_METERS = 6000      # 午餐只在上一站 6 公里内找餐厅，太远就提醒自行安排
 LUNCH_NEAR_METERS = 3000     # 全天型景点 3 公里内有餐厅，才安排中午出来吃饭
 MAX_WAIT = 60                # 到了还没开门，最多等 60 分钟
 MAX_DISTRICTS = 2
@@ -145,6 +147,10 @@ class DayPlanner:
         lunch_reserve = 0.0 if self.lunch_done else self._cheapest_lunch()
         best, best_value = None, 0.0
         for poi in candidates:
+            # 说了想去的片区，就只在这些片区里挑（点名要去的景点除外）；没说时一天最多跨两个片区
+            must = poi.id in self.cond.must_poi_ids
+            if self.cond.district_ids and poi.district_id not in self.cond.district_ids and not must:
+                continue
             if poi.district_id not in used_districts and len(used_districts) >= MAX_DISTRICTS:
                 continue
             leg = self._leg_to(poi)
@@ -157,9 +163,10 @@ class DayPlanner:
             end = start + poi.stay_minutes
             if end > self.day_end:
                 continue
-            if not self.lunch_done and end > LUNCH_START and end + self._minutes_to_lunch(poi) > LUNCH_LATEST:
+            cost = (leg.cost if leg else 0) + self._ticket(poi)
+            if not self.lunch_done and end > LUNCH_START and end + self._minutes_to_lunch(poi, cost) > LUNCH_LATEST:
                 continue  # 玩完这一站就赶不上午饭了
-            if self._over_budget((leg.cost if leg else 0) + self._ticket(poi) + lunch_reserve):
+            if self._over_budget(cost + lunch_reserve):
                 continue
             value = self._score(poi) - 0.08 * travel - 0.02 * (start - arrive)
             if best is None or value > best_value:
@@ -207,7 +214,7 @@ class DayPlanner:
         self.lunch_done = True
         best = None
         over_budget = False
-        for r in self.restaurants if candidates is None else candidates:
+        for r in self._nearby_restaurants() if candidates is None else candidates:
             leg = self._leg_to(r)
             arrive = max(self.time + (leg.minutes if leg else 0), LUNCH_START)
             start = self._fit(r, arrive, LUNCH_MINUTES, MAX_WAIT)
@@ -217,12 +224,12 @@ class DayPlanner:
             if self._over_budget((leg.cost if leg else 0) + cost):
                 over_budget = True
                 continue
-            # 优先用户点名的餐厅，其次开饭早、离得近的
-            rank = (r.id not in self.cond.must_poi_ids, start, leg.minutes if leg else 0)
+            # 优先用户点名的餐厅，其次开饭早、离得近、便宜的
+            rank = (r.id not in self.cond.must_poi_ids, start, leg.minutes if leg else 0, cost)
             if best is None or rank < best[0]:
                 best = (rank, r, leg, start, cost)
         if best is None:
-            self.warnings.append("预算不够安排午餐，请自行解决" if over_budget else "附近没有合适的餐厅，午餐请自行安排")
+            self.warnings.append("预算不够安排午餐，请自行解决" if over_budget else "附近没有收录合适的餐厅，午餐请自行安排")
             return
         _, r, leg, start, cost = best
         self._append(r, leg, start, start + LUNCH_MINUTES, cost)
@@ -254,16 +261,29 @@ class DayPlanner:
     def _over_budget(self, extra: float) -> bool:
         return self.cond.budget is not None and self.spent + extra > self.cond.budget + 0.001
 
+    def _nearby_restaurants(self, around: Optional[Poi] = None) -> list[Poi]:
+        """某个位置（默认是当前所在的站）附近能去吃午饭的餐厅。"""
+        center = around or self.pos
+        if center is None:
+            return self.restaurants
+        return [r for r in self.restaurants if geo.distance_m(center, r) <= LUNCH_MAX_METERS]
+
     def _cheapest_lunch(self) -> float:
-        """给午餐预留的钱；连最便宜的一顿都吃不起时不预留（到时候提醒）。"""
-        costs = [(r.avg_cost or 0) * self.people for r in self.restaurants]
+        """给午餐预留的钱；附近没有餐厅，或者连最便宜的一顿都吃不起时不预留（到时候提醒）。"""
+        costs = [(r.avg_cost or 0) * self.people for r in self._nearby_restaurants()]
         cheapest = min(costs, default=0.0)
         if self._over_budget(cheapest):
             return 0.0
         return cheapest
 
-    def _minutes_to_lunch(self, poi: Poi) -> int:
-        return min((geo.estimate(poi, r, self.people).minutes for r in self.restaurants), default=0)
+    def _minutes_to_lunch(self, poi: Poi, extra_cost: float) -> int:
+        """玩完这一站后，去附近吃得起的最近餐厅要多久；附近没有这样的餐厅就不限制（到时候提醒）。"""
+        minutes = []
+        for r in self._nearby_restaurants(poi):
+            leg = geo.estimate(poi, r, self.people)
+            if not self._over_budget(extra_cost + leg.cost + (r.avg_cost or 0) * self.people):
+                minutes.append(leg.minutes)
+        return min(minutes, default=0)
 
     def _score(self, poi: Poi) -> float:
         score = poi.rating or 4.0
@@ -272,8 +292,6 @@ class DayPlanner:
             score += 1
         if self.cond.children and "亲子" in poi.tags:
             score += 1
-        if self.cond.district_ids:
-            score += 1.5 if poi.district_id in self.cond.district_ids else -3
         if poi.id in self.cond.must_poi_ids:
             score += 100
         return score

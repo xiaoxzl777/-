@@ -111,6 +111,23 @@ def test_tight_pace_keeps_two_districts_at_most():
     assert_valid(cond, result)
 
 
+def test_chosen_districts_are_respected():
+    cond, result = run(district_ids=[2], pace="TIGHT")
+    assert_valid(cond, result)
+    assert {BY_ID[i].district_id for i in ids(result) if BY_ID[i].type == "SCENIC"} == {2}
+    # 点名要去的景点不受片区限制
+    cond, result = run(district_ids=[2], must_poi_ids=[1])
+    assert 1 in ids(result)
+
+
+def test_no_lunch_when_restaurants_are_far_away():
+    # 番禺片区里去掉园区餐厅后，最近的餐厅也在十几公里外，不应该为了吃饭跑那么远
+    cond, result = run(district_ids=[5], avoid_poi_ids=[10])
+    assert_valid(cond, result)
+    assert ids(result) == [7]
+    assert "附近没有收录合适的餐厅，午餐请自行安排" in result.warnings
+
+
 def test_nothing_can_be_planned():
     museum_only = [p for p in POIS if p.id in (4, 9)]
     cond, result = run(pois=museum_only, date=MONDAY, must_poi_ids=[4])
