@@ -105,7 +105,7 @@ class DayPlanner:
             # 一个景点都排不进去时，只剩一顿午餐没有意义
             self.visits.clear()
             self.spent = 0.0
-            self.warnings.append("按现在的条件排不出景点，可以换个日期或放宽条件")
+            self.warnings.append(self._empty_warning())
 
         self._check_must_visits()
         return PlanResult(
@@ -115,6 +115,13 @@ class DayPlanner:
             filter_detail=self._filter_detail(),
             arrange_detail=self._arrange_detail(),
         )
+
+    def _empty_warning(self) -> str:
+        """一个景点都排不进去时的提醒：选的片区当天没有能去的景点（闭馆或说了不去），就建议换个片区。"""
+        if self.cond.district_ids and not any(p.district_id in self.cond.district_ids for p in self.scenic):
+            names = "、".join(self.district_names[i] for i in self.cond.district_ids if i in self.district_names)
+            return f"{names}这天没有能去的景点，可以换个片区"
+        return "按现在的条件排不出景点，可以换个日期或放宽条件"
 
     def _plan_greedy(self, candidates: list[Poi]) -> None:
         candidates = list(candidates)

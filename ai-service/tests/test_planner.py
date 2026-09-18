@@ -54,6 +54,13 @@ def test_museum_closed_on_monday_is_explained():
     assert any("广东省博物馆周一闭馆" in w for w in result.warnings)
 
 
+def test_empty_district_suggests_another_district():
+    # 周一省博闭馆，广州塔又说了不去：这个片区当天没有能去的景点
+    cond, result = run(date=MONDAY, district_ids=[2], avoid_poi_ids=[5])
+    assert result.items == []
+    assert result.warnings == ["珠江新城与广州塔这天没有能去的景点，可以换个片区"]
+
+
 def test_closed_date_is_explained():
     closed = [p.model_copy(update={"closed_dates": [SATURDAY]}) if p.id == 1 else p for p in POIS]
     cond, result = run(pois=closed, must_poi_ids=[1])
