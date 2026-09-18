@@ -1,11 +1,12 @@
 import { adminHttp } from './http';
-import type { District, OpenRule, PageResult, Poi, PoiDetail, PoiForm, PoiQuery, PoiStatus } from './types';
+import type { AiStatus, District, OpenRule, PageResult, Poi, PoiDetail, PoiForm, PoiQuery, PoiStatus } from './types';
 
 /** 管理端接口：/api/admin/** */
 
 export const adminApi = {
   login: (body: { username: string; password: string }) =>
     adminHttp.post<{ token: string; name: string }>('/admin/login', body),
+  aiStatus: () => adminHttp.get<AiStatus>('/admin/ai-status'),
 
   districts: () => adminHttp.get<District[]>('/admin/districts'),
   addDistrict: (body: { name: string; sort: number }) => adminHttp.post<number>('/admin/districts', body),

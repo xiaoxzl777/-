@@ -22,8 +22,8 @@ interface Message {
   intent?: 'PLAN' | 'CHAT' | 'GREETING';
   steps?: Step[];
   status?: 'pending' | 'error';
-  /** 出错时可以重发的那句话 */
-  retryText?: string;
+  /** 出错时点“重试”要做的事 */
+  retry?: () => void;
 }
 
 const SUGGESTIONS = ['周六带爸妈逛老城区，想轻松点，预算 500', '明天一个人去看博物馆', '周日带孩子去长隆', '你是谁？'];
@@ -104,25 +104,22 @@ export default function Chat() {
       .filter(m => !m.status && m.content)
       .slice(-HISTORY_LIMIT)
       .map(m => ({ role: m.role, content: m.content }));
-    addMessage({ role: 'user', content: text });
+    const askId = addMessage({ role: 'user', content: text });
     const id = addMessage({ role: 'assistant', content: '', mood: 'THINKING', status: 'pending' });
     setBusyState(true);
     try {
       const reply = await chatApi.send({ message: text, history, conditions: planRef.current?.conditions ?? null });
       handleReply(id, reply, text);
     } catch (error) {
-      patchMessage(id, { content: errorMessage(error), mood: 'CARING', status: 'error', retryText: text });
+      // 重试：去掉出错的回复和对应的那句话，再发一次
+      const retry = () => {
+        commit(messagesRef.current.filter(m => m.id !== id && m.id !== askId));
+        void send(text);
+      };
+      patchMessage(id, { content: errorMessage(error), mood: 'CARING', status: 'error', retry });
     } finally {
       setBusyState(false);
     }
-  };
-
-  const retry = (failed: Message) => {
-    if (!failed.retryText || busyRef.current) return;
-    const index = messagesRef.current.findIndex(m => m.id === failed.id);
-    // 去掉出错的回复和对应的那句话，再重发
-    commit(messagesRef.current.filter((_, i) => i !== index && i !== index - 1));
-    void send(failed.retryText);
   };
 
   const replan = async (conditions: Conditions) => {
@@ -132,10 +129,18 @@ export default function Chat() {
     try {
       handleReply(id, await chatApi.replan(conditions));
     } catch (error) {
-      patchMessage(id, { content: errorMessage(error), mood: 'CARING', status: 'error' });
+      const retry = () => {
+        commit(messagesRef.current.filter(m => m.id !== id));
+        void replan(conditions);
+      };
+      patchMessage(id, { content: errorMessage(error), mood: 'CARING', status: 'error', retry });
     } finally {
       setBusyState(false);
     }
+  };
+
+  const retry = (failed: Message) => {
+    if (failed.retry && !busyRef.current) failed.retry();
   };
 
   const greet = async () => {
@@ -309,7 +314,7 @@ export default function Chat() {
                     <div className="bubble-error">
                       <WarningCircle size={16} className="ic" />
                       <span>{m.content}</span>
-                      {m.retryText && <button type="button" className="link" onClick={() => retry(m)}>重试</button>}
+                      {m.retry && <button type="button" className="link" onClick={() => retry(m)}>重试</button>}
                     </div>
                   )}
                   {!m.status && <div className="bubble-ai">{m.content}</div>}

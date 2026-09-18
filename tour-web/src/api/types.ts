@@ -134,6 +134,15 @@ export interface Greeting {
   reply: string;
 }
 
+/** 小萧能不能用（后台顶部提醒） */
+export interface AiStatus {
+  available: boolean;
+  /** 不能用的原因，比如“DeepSeek 余额不足，请充值” */
+  problem: string | null;
+  /** DeepSeek 余额（元） */
+  balance: string | null;
+}
+
 export interface ChatHistoryItem {
   role: 'user' | 'assistant';
   content: string;

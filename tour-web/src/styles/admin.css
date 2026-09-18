@@ -10,6 +10,7 @@
 .admin-user { margin-right: 8px; color: var(--text-2); font-size: 14px; }
 .admin .admin-content { padding: 24px; background: var(--bg); }
 .admin-page { max-width: 1200px; margin: 0 auto; }
+.admin-alert { max-width: 1200px; margin: 0 auto 18px; }
 .admin-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 18px; }
 .admin-head h1 { margin: 0; font-size: 24px; line-height: 1.35; }
 .admin-head p { margin: 4px 0 0; color: var(--text-3); font-size: 14px; }

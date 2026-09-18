@@ -1,16 +1,43 @@
 import { House, MapPinArea, MapTrifold, MoonStars, Path, SignOut, SunDim } from '@phosphor-icons/react';
-import { Layout, Menu } from 'antd';
+import { Alert, Button, Layout, Menu } from 'antd';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
+import { adminApi } from '../../api/admin';
 import { useApp } from '../../store/app';
 
 const { Sider, Header, Content } = Layout;
 
-/** 后台布局：左侧菜单 + 顶栏 + 内容 */
+/** 查小萧能不能用：能用返回 null，不能用返回原因；查不到时不提醒，不影响后台使用 */
+function checkAi(): Promise<string | null> {
+  return adminApi.aiStatus()
+    .then(status => (status.available ? null : status.problem ?? '原因不明'))
+    .catch(() => null);
+}
+
+/** 后台布局：左侧菜单 + 顶栏 + 内容；小萧用不了时内容区顶部显示红色提醒 */
 export default function AdminLayout() {
   const { logoutAdmin, theme, toggleTheme } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const selected = location.pathname.startsWith('/admin/districts') ? 'districts' : 'pois';
+  const [aiProblem, setAiProblem] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void checkAi().then(problem => {
+      if (active) setAiProblem(problem);
+    });
+    return () => { active = false; };
+  }, []);
+
+  const recheck = () => {
+    setChecking(true);
+    void checkAi().then(problem => {
+      setAiProblem(problem);
+      setChecking(false);
+    });
+  };
 
   return (
     <Layout className="admin">
@@ -39,6 +66,10 @@ export default function AdminLayout() {
           </button>
         </Header>
         <Content className="admin-content">
+          {aiProblem && (
+            <Alert type="error" showIcon className="admin-alert" title={`小萧暂时不能用：${aiProblem}`}
+              action={<Button size="small" danger loading={checking} onClick={recheck}>重新检查</Button>} />
+          )}
           <Outlet />
         </Content>
       </Layout>

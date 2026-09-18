@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance } from 'axios';
+import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios';
 
 /** 接口返回的错误：code 含义见接口文档第 2 节，code 为 0 表示网络问题 */
 export class ApiError extends Error {
@@ -57,7 +57,7 @@ function createClient(tokenKey: string, onUnauthorized: () => void): AxiosInstan
       return Promise.reject(new ApiError(body.code, body.message));
     },
     error => {
-      const message = error.code === 'ECONNABORTED' ? '请求超时了，请稍后再试' : '连不上服务器，请确认后端已经启动';
+      const message = error.code === 'ECONNABORTED' ? '请求超时了，再试一次吧' : '连不上服务器，请确认后端已经启动';
       return Promise.reject(new ApiError(0, message));
     },
   );
@@ -85,7 +85,8 @@ const adminClient = createClient(ADMIN_TOKEN_KEY, () => {
 function wrap(client: AxiosInstance) {
   return {
     get: async <T>(url: string, params?: object) => (await client.get<Result<T>>(url, { params })).data.data,
-    post: async <T>(url: string, body?: unknown) => (await client.post<Result<T>>(url, body)).data.data,
+    post: async <T>(url: string, body?: unknown, config?: AxiosRequestConfig) =>
+      (await client.post<Result<T>>(url, body, config)).data.data,
     put: async <T>(url: string, body?: unknown) => (await client.put<Result<T>>(url, body)).data.data,
     del: async <T>(url: string) => (await client.delete<Result<T>>(url)).data.data,
   };

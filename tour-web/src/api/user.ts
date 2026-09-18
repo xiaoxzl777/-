@@ -18,11 +18,14 @@ export const poiApi = {
   detail: (id: number | string) => userHttp.get<PoiDetail>(`/user/pois/${id}`),
 };
 
+/** 小萧要调用大模型，后端最多等 AI 服务 60 秒，这里比后端多留一点，超时提示由后端给出 */
+const AI_TIMEOUT = { timeout: 70000 };
+
 export const chatApi = {
   greeting: () => userHttp.get<Greeting>('/user/chat/greeting'),
   send: (body: { message: string; history: ChatHistoryItem[]; conditions: Conditions | null }) =>
-    userHttp.post<ChatReply>('/user/chat', body),
-  replan: (conditions: Conditions) => userHttp.post<ChatReply>('/user/plan', { conditions }),
+    userHttp.post<ChatReply>('/user/chat', body, AI_TIMEOUT),
+  replan: (conditions: Conditions) => userHttp.post<ChatReply>('/user/plan', { conditions }, AI_TIMEOUT),
 };
 
 export const tripApi = {
