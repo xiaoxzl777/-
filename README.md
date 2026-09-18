@@ -2,7 +2,9 @@
 
 面向广州自由行游客的行程规划网站，网站名“悠行”。用户和 AI 助手“小萧”聊出行想法，小萧先分辨是闲聊还是要规划行程，再结合景点开放时间、路程和预算，排出一份当天走得通的行程。
 
-## 技术栈
+## 架构
+
+三个独立的项目，前后端分离：前端只通过 `/api` 下的 JSON 接口和后端通信，登录靠 JWT 令牌；后端把消息和景点数据交给 AI 服务，AI 服务识别意图、排行程、写小萧的回复。
 
 | 部分 | 目录 | 技术 | 端口 |
 |---|---|---|---|
@@ -10,14 +12,36 @@
 | 后端 | `tour-server` | Spring Boot 3.5 + MyBatis + MySQL 8 | 777 |
 | AI 服务 | `ai-service` | Python FastAPI + LangChain + LangGraph + DeepSeek | 7777 |
 
-端口是固定的，被占用时直接报错，不会自动换。前端没用 77，因为浏览器会把 77 当成不安全端口拦掉。
-
-前后端分离：前端是独立的 React 项目，只通过 `/api` 下的 JSON 接口和后端通信，登录靠 JWT 令牌。后端把消息和景点数据交给 AI 服务，AI 服务识别意图、排行程、写小萧的回复。
+有两种运行方式，只差前端和后端怎么跑：
 
 ```
-开发模式（start.bat）：浏览器 → Vite(770)：页面 + 把 /api 转给后端 → 后端(777) → AI 服务(7777)
-部署模式（deploy.bat）：浏览器 → nginx(770)：打包好的页面 + 把 /api 反向代理给后端 → 后端 jar(777) → AI 服务(7777)
+开发模式：浏览器 → Vite(770)：页面 + 把 /api 转给后端 → 后端(777) → AI 服务(7777)
+部署模式：浏览器 → nginx(770)：打包好的页面 + 把 /api 反向代理给后端 → 后端 jar(777) → AI 服务(7777)
 ```
+
+```
+graduate-project/
+├─ tour-web/      前端
+├─ tour-server/   后端
+├─ ai-service/    AI 服务（小萧）
+├─ deploy/        运行和部署：启动器 run.py、双击入口 dev.bat / prod.bat、nginx 配置
+└─ docs/          需求分析、数据库设计、接口文档、前端设计规范
+```
+
+## 配置在哪
+
+每项配置都有明确的归属，代码和提示文案里不写端口。
+
+| 配置 | 位置 |
+|---|---|
+| 前端开发端口 770、`/api` 转发给 777 | `tour-web/vite.config.ts` |
+| 部署时的页面端口 770、`/api` 反向代理给 777 | `deploy/nginx.conf` |
+| 后端端口 777、AI 服务地址、管理员账号、JWT | `tour-server/src/main/resources/application.yml` |
+| MySQL 账号密码 | `tour-server/src/main/resources/application-local.yml`（不入库） |
+| AI 服务端口 7777、DeepSeek 设置的默认值 | `ai-service/app/config.py` |
+| DeepSeek 的 Key，以及要覆盖默认值的设置 | `ai-service/.env`（不入库） |
+
+端口是固定的，被占用时直接报错，不会自动换。端口会同时出现在“监听的一方”和“调用它的一方”的配置里，改的时候要一起改：比如后端的 777，要改 `application.yml`、`vite.config.ts`、`deploy/nginx.conf`，还有 `deploy/run.py` 开头的端口（启动器用它检查端口、等服务就绪）。前端没用 77，因为浏览器会把 77 当成不安全端口拦掉。
 
 ## 当前进度
 
@@ -33,75 +57,62 @@
 - Python 3.10 以上
 - MySQL 8
 
-## 启动步骤
+## 第一次运行前的准备
 
-### 一键启动（Windows）
+在新电脑上只用做一次：
 
-第一次在新电脑上运行前，先按下面的 1–4 步装好依赖、填好配置，只用做一次。之后用根目录的三个脚本：
+1. **数据库**：复制 `tour-server/src/main/resources/application-local.yml.example`，改名为 `application-local.yml`，填上本机 MySQL 的账号和密码。不用手动建库，后端第一次启动时会自动创建 `tour_planner` 库和表，并导入示例数据，不会动其他库。
+2. **AI 服务**：复制 `ai-service/.env.example`，改名为 `.env`，填上 DeepSeek 的 Key（`DEEPSEEK_API_KEY=sk-...`）。再建虚拟环境、装依赖：
 
-| 脚本 | 做什么 |
-|---|---|
-| `start.bat` | 开发模式：打开三个窗口，分别运行 AI 服务（7777）、后端（777）、前端开发服务器（770）。改前端代码后页面自动刷新，平时写代码用这个 |
-| `deploy.bat` | 部署模式：先打包前端和后端 jar，再运行 AI 服务、后端 jar，nginx 在后台提供页面并反向代理 `/api`。演示和截图用这个 |
-| `stop.bat` | 停止上面两种模式启动的所有服务 |
+   ```bash
+   cd ai-service
+   python -m venv .venv
+   .venv\Scripts\python -m pip install -r requirements.txt
+   ```
 
-- 两种模式启动好后都会自动打开浏览器 http://localhost:770。它们都用 770 端口，同一时间只能运行一种，换模式前先运行 `stop.bat`。
-- 缺依赖、缺配置文件或者端口被占用时，脚本会列出来，处理好再运行。
-- 脚本里的提示用英文：cmd 读含中文的批处理文件会错行。
+3. **前端**：在 `tour-web` 目录运行 `npm install`。
 
-### 部署模式和 nginx
+后端不用准备：项目自带 Maven Wrapper，第一次启动时会自动下载 Maven 和依赖。
 
-- nginx 放在 `deploy/nginx`，不提交到 git。第一次运行 `deploy.bat` 时，会从 nginx.org 自动下载官方 Windows 版 1.30.5。
-- 配置文件是 `deploy/nginx.conf`，主要做了这几件事：
+## 启动和停止
+
+| 模式 | 双击 | 或者在项目根目录运行 | 用途 |
+|---|---|---|---|
+| 开发 | `deploy/dev.bat` | `python deploy/run.py dev` | 平时写代码：改前端代码后页面自动刷新 |
+| 部署 | `deploy/prod.bat` | `python deploy/run.py prod` | 演示、截图：先打包，再由 nginx 提供页面 |
+
+- 三个服务的日志显示在同一个窗口里，每行前面的 `[ai]` `[server]` `[web]` `[nginx]` 表示来自哪个服务。
+- 都启动好后，会自动打开浏览器 http://localhost:770。
+- **按 Ctrl+C 停止全部服务**。双击启动的，停止后如果问“终止批处理操作吗”，按 Y 关掉窗口。直接关掉窗口也会停止。
+- 两种模式都用 770 端口，同一时间只能运行一种。
+- 启动前会先检查依赖、配置文件和端口，缺了或被占用会直接说明。
+
+**部署模式和 nginx**
+
+- nginx 放在 `deploy/nginx`，不提交到 git。第一次运行部署模式时，会从 nginx.org 下载官方 Windows 版 1.30.5，核对 SHA-256 后解压。
+- `deploy/nginx.conf` 主要做了这几件事：
   - 提供 `tour-web/dist` 里打包好的页面；
   - 刷新 `/chat`、`/trips/1` 这类前端路由时返回 `index.html`，交给 React 处理；
-  - 把 `/api` 反向代理给后端 777，等待时间 75 秒，给小萧规划留足时间；
+  - 把 `/api` 反向代理给后端 777，最多等 75 秒，给小萧规划留足时间；
   - js、css 缓存 30 天，`index.html` 不缓存，并开启 gzip 压缩。
-- Windows 版 nginx 关掉窗口也不会退出，所以它在后台运行，要用 `stop.bat` 停止。也可以在 `deploy/nginx` 目录里运行 `nginx.exe -s stop -c ../nginx.conf`。
-- nginx 的日志在 `deploy/nginx/logs`，页面打不开时先看 `error.log`。
+- Windows 版 nginx 不会跟着窗口退出，启动器会用 `nginx -s stop` 停它；万一上次没停掉，下次启动部署模式时会先把它停掉。
+- nginx 的日志在 `deploy/nginx/logs`。
 
-### 手动启动
-
-三个部分各开一个终端，按下面顺序启动。以下命令以 Windows 为例。
-
-### 1. 配置数据库
-
-复制 `tour-server/src/main/resources/application-local.yml.example`，改名为 `application-local.yml`，填上本机 MySQL 的账号和密码。这个文件不会提交到 git。
-
-不用手动建库：后端第一次启动时会自动创建 `tour_planner` 库和表，并导入示例数据，不会动其他库。
-
-### 2. 启动 AI 服务
-
-先复制 `ai-service/.env.example`，改名为 `.env`，填上 DeepSeek 的 Key（`DEEPSEEK_API_KEY=sk-...`）。这个文件不会提交到 git。
+**单独启动某一个服务**（调试时用，各开一个终端）
 
 ```bash
+# AI 服务
 cd ai-service
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --port 7777
-```
+.venv\Scripts\python -m app
 
-访问 http://localhost:7777/health 可以看到小萧能不能用（Key 是否有效、余额）。
-
-### 3. 启动后端
-
-```bash
+# 后端
 cd tour-server
 .\mvnw.cmd spring-boot:run
-```
 
-第一次运行会下载 Maven 和依赖，时间稍长。看到 `Started TourServerApplication` 就启动好了。
-
-### 4. 启动前端
-
-```bash
+# 前端开发服务器
 cd tour-web
-npm install
 npm run dev
 ```
-
-打开 http://localhost:770。
 
 ## 账号
 
@@ -126,12 +137,12 @@ npm run build
 
 ## 常见问题
 
-- **小萧说“暂时不在线”**：AI 服务没启动，或者 7777 端口被占用。
-- **提示端口被占用**：先运行 `stop.bat`。还不行的话，用 `netstat -ano | findstr :777` 查出占用端口的进程号，在任务管理器里确认是什么程序。
-- **部署模式下页面打开是 502**：nginx 已经启动，但后端还没好或者启动失败，看“YouXing Server”窗口里的报错。
+- **启动器说端口被占用**：多半是另一个模式还在运行，先把它停掉。还不行的话，用 `netstat -ano | findstr :777` 查出占用端口的进程号，在任务管理器里确认是什么程序。
+- **启动器说某个服务退出了**：往上翻，看这个服务名开头的日志里的报错。
+- **后端启动报 Access denied**：`application-local.yml` 里的 MySQL 账号密码不对。
+- **小萧说“暂时不在线”**：AI 服务没在运行，看 `[ai]` 开头的日志。
 - **小萧说“暂时不能用了”**：DeepSeek 的 Key 无效或余额不足，后台顶部也会有提醒。
 - **小萧说“请求超时了”**：DeepSeek 响应慢或网络不稳，点重试就行；经常超时可以把 `ai-service/.env` 里的 `DEEPSEEK_TIMEOUT` 调大一点。
-- **后端启动报 Access denied**：`application-local.yml` 里的 MySQL 账号密码不对。
 - **npm 或 pip 下载慢**：可以换国内镜像，比如 `npm config set registry https://registry.npmmirror.com`、`pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple`。
 
 ## 文档
