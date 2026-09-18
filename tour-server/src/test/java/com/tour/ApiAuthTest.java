@@ -1,13 +1,16 @@
 package com.tour;
 
+import com.tour.client.AiClient;
 import com.tour.common.PageResult;
 import com.tour.config.JacksonConfig;
 import com.tour.config.TourProperties;
 import com.tour.controller.admin.AdminLoginController;
+import com.tour.controller.admin.AiStatusAdminController;
 import com.tour.controller.admin.PoiAdminController;
 import com.tour.controller.user.ChatController;
 import com.tour.controller.user.PoiController;
 import com.tour.controller.user.TripController;
+import com.tour.pojo.vo.AiStatusVO;
 import com.tour.service.ChatService;
 import com.tour.service.DistrictService;
 import com.tour.service.PoiService;
@@ -40,8 +43,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 接口权限测试：管理端和用户端的令牌不能混用，浏览景点不用登录。不需要数据库。
  */
-@WebMvcTest(controllers = {AdminLoginController.class, PoiAdminController.class, PoiController.class,
-        TripController.class, ChatController.class})
+@WebMvcTest(controllers = {AdminLoginController.class, AiStatusAdminController.class, PoiAdminController.class,
+        PoiController.class, TripController.class, ChatController.class})
 @Import({AdminServiceImpl.class, JwtUtil.class, JacksonConfig.class})
 @EnableConfigurationProperties(TourProperties.class)
 @TestPropertySource(properties = {
@@ -64,6 +67,8 @@ class ApiAuthTest {
     private TripService tripService;
     @MockitoBean
     private ChatService chatService;
+    @MockitoBean
+    private AiClient aiClient;
 
     @Test
     void adminLogsInWithTheFixedAccount() throws Exception {
@@ -86,6 +91,17 @@ class ApiAuthTest {
         perform(get("/api/admin/pois"), userToken(), null).andExpect(jsonPath("$.code").value(403));
         perform(get("/api/admin/pois"), "Bearer broken.token", null).andExpect(jsonPath("$.code").value(401));
         perform(get("/api/admin/pois"), adminToken(), null).andExpect(jsonPath("$.code").value(0));
+    }
+
+    @Test
+    void adminSeesWhetherXiaoxiaoWorks() throws Exception {
+        when(aiClient.status()).thenReturn(new AiStatusVO(false, "DeepSeek 余额不足，请充值", "0.00"));
+        perform(get("/api/admin/ai-status"), userToken(), null).andExpect(jsonPath("$.code").value(403));
+        perform(get("/api/admin/ai-status"), adminToken(), null)
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.available").value(false))
+                .andExpect(jsonPath("$.data.problem").value("DeepSeek 余额不足，请充值"))
+                .andExpect(jsonPath("$.data.balance").value("0.00"));
     }
 
     @Test

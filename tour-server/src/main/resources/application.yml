@@ -35,4 +35,5 @@ tour:
     expire-days: 7
   ai:
     base-url: http://localhost:8000
-    timeout-seconds: 20
+    # 规划一次要调用 3 次大模型，每次最多 15 秒，这里留足时间
+    timeout-seconds: 60

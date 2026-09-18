@@ -1,9 +1,11 @@
 package com.tour.service.impl;
 
+import com.tour.client.AiClient;
 import com.tour.common.BusinessException;
 import com.tour.config.TourProperties;
 import com.tour.pojo.dto.LoginDTO;
 import com.tour.pojo.vo.AdminLoginVO;
+import com.tour.pojo.vo.AiStatusVO;
 import com.tour.service.AdminService;
 import com.tour.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ public class AdminServiceImpl implements AdminService {
 
     private final TourProperties properties;
     private final JwtUtil jwtUtil;
+    private final AiClient aiClient;
 
     @Override
     public AdminLoginVO login(LoginDTO dto) {
@@ -24,5 +27,10 @@ public class AdminServiceImpl implements AdminService {
             throw BusinessException.badRequest("账号或密码错误");
         }
         return new AdminLoginVO(jwtUtil.createToken(JwtUtil.ROLE_ADMIN, admin.getUsername()), "管理员");
+    }
+
+    @Override
+    public AiStatusVO aiStatus() {
+        return aiClient.status();
     }
 }
