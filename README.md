@@ -6,9 +6,11 @@
 
 | 部分 | 目录 | 技术 | 端口 |
 |---|---|---|---|
-| 前端 | `tour-web` | React 19 + TypeScript + Vite + Ant Design | 5173 |
-| 后端 | `tour-server` | Spring Boot 3.5 + MyBatis + MySQL 8 | 8081 |
-| AI 服务 | `ai-service` | Python FastAPI + LangChain + LangGraph + DeepSeek | 8000 |
+| 前端 | `tour-web` | React 19 + TypeScript + Vite + Ant Design | 770 |
+| 后端 | `tour-server` | Spring Boot 3.5 + MyBatis + MySQL 8 | 777 |
+| AI 服务 | `ai-service` | Python FastAPI + LangChain + LangGraph + DeepSeek | 7777 |
+
+端口是固定的，被占用时直接报错，不会自动换。前端没用 77，因为浏览器会把 77 当成不安全端口拦掉。
 
 浏览器只访问后端；后端把消息和景点数据交给 AI 服务，AI 服务识别意图、排行程、写小萧的回复。
 
@@ -28,6 +30,18 @@
 
 ## 启动步骤
 
+### 一键启动（Windows）
+
+第一次在新电脑上运行前，先按下面的 1–4 步装好依赖、填好配置，只用做一次。之后双击项目根目录的 `start.bat`：
+
+- 会打开三个窗口，分别运行 AI 服务（7777）、后端（777）、前端（770）；
+- 后端启动好后，自动打开浏览器 http://localhost:770；
+- 关掉对应的窗口，就停止那个服务。
+
+缺依赖、缺配置文件或者端口被占用时，脚本会列出来，处理好再运行。脚本里的提示用英文：cmd 读含中文的批处理文件会错行。
+
+### 手动启动
+
 三个部分各开一个终端，按下面顺序启动。以下命令以 Windows 为例。
 
 ### 1. 配置数据库
@@ -45,10 +59,10 @@ cd ai-service
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --port 8000
+uvicorn app.main:app --port 7777
 ```
 
-访问 http://localhost:8000/health 可以看到小萧能不能用（Key 是否有效、余额）。
+访问 http://localhost:7777/health 可以看到小萧能不能用（Key 是否有效、余额）。
 
 ### 3. 启动后端
 
@@ -67,7 +81,7 @@ npm install
 npm run dev
 ```
 
-打开终端里显示的地址（默认 http://localhost:5173，被占用时会自动换成 5174 等）。
+打开 http://localhost:770。
 
 ## 账号
 
@@ -92,7 +106,8 @@ npm run build
 
 ## 常见问题
 
-- **小萧说“暂时不在线”**：AI 服务没启动，或者 8000 端口被占用。
+- **小萧说“暂时不在线”**：AI 服务没启动，或者 7777 端口被占用。
+- **提示端口被占用**：先关掉之前打开的窗口。还不行的话，用 `netstat -ano | findstr :777` 查出占用端口的进程号，在任务管理器里确认是什么程序。
 - **小萧说“暂时不能用了”**：DeepSeek 的 Key 无效或余额不足，后台顶部也会有提醒。
 - **小萧说“请求超时了”**：DeepSeek 响应慢或网络不稳，点重试就行；经常超时可以把 `ai-service/.env` 里的 `DEEPSEEK_TIMEOUT` 调大一点。
 - **后端启动报 Access denied**：`application-local.yml` 里的 MySQL 账号密码不对。

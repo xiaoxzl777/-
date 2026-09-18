@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 777
 
 spring:
   application:
@@ -34,6 +34,6 @@ tour:
     secret: tour-planner-demo-jwt-secret-change-me-0123456789
     expire-days: 7
   ai:
-    base-url: http://localhost:8000
+    base-url: http://localhost:7777
     # 规划一次要调用 3 次大模型，每次最多 15 秒，这里留足时间
     timeout-seconds: 60

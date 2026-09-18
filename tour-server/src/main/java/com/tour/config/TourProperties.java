@@ -30,7 +30,7 @@ public class TourProperties {
     /** Python AI 服务 */
     @Data
     public static class Ai {
-        private String baseUrl = "http://localhost:8000";
-        private int timeoutSeconds = 20;
+        private String baseUrl = "http://localhost:7777";
+        private int timeoutSeconds = 60;
     }
 }
