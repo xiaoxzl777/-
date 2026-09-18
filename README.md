@@ -77,11 +77,11 @@ npm run dev
 ## 测试
 
 ```bash
-# AI 服务：意图识别、条件理解、排程、接口
+# AI 服务：小萧的流程图（用假模型代替 DeepSeek，不联网）、排程、校验、报错处理、接口
 cd ai-service
 .venv\Scripts\python -m pytest
 
-# 后端：管理端和用户端的令牌权限、参数校验（不需要数据库）
+# 后端：令牌权限、参数校验、AI 服务出错时给用户的提示（不需要数据库和 AI 服务）
 cd tour-server
 .\mvnw.cmd test
 
@@ -94,6 +94,7 @@ npm run build
 
 - **小萧说“暂时不在线”**：AI 服务没启动，或者 8000 端口被占用。
 - **小萧说“暂时不能用了”**：DeepSeek 的 Key 无效或余额不足，后台顶部也会有提醒。
+- **小萧说“请求超时了”**：DeepSeek 响应慢或网络不稳，点重试就行；经常超时可以把 `ai-service/.env` 里的 `DEEPSEEK_TIMEOUT` 调大一点。
 - **后端启动报 Access denied**：`application-local.yml` 里的 MySQL 账号密码不对。
 - **npm 或 pip 下载慢**：可以换国内镜像，比如 `npm config set registry https://registry.npmmirror.com`、`pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple`。
 
