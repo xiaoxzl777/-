@@ -1,13 +1,14 @@
-"""流程图的各个节点。识别意图、闲聊回复、理解需求、写回复调用大模型；排行程、校验调用算法。"""
+"""流程图的各个节点。敏感内容检查按规则；识别意图、闲聊回复、理解需求、写回复调用大模型；排行程、校验调用算法。"""
 from __future__ import annotations
 
 import json
+import logging
 import re
 from datetime import date, timedelta
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
-from .. import llm
+from .. import llm, sensitive
 from ..chains import Chains, ParsedRequest
 from ..planner import greedy, verify
 from ..planner.timeutil import date_label, weekday_name
@@ -19,10 +20,21 @@ MODE_NAMES = {"WALK": "步行", "METRO": "地铁", "TAXI": "打车"}
 DEFAULT_NOTES = {"date": "没说日期，按明天算", "budget": "没说预算，按不限算"}
 OFFICIAL_NOTICE = "开放时间和票价以官网为准"
 
+log = logging.getLogger("xiaoxiao.sensitive")
+
 
 class Nodes:
     def __init__(self, chains: Chains):
         self.chains = chains
+
+    def guard(self, state: TripState) -> dict:
+        """交给大模型之前先按规则检查：这条消息命中就直接用写好的话回复；历史对话里命中的也去掉。"""
+        history = sensitive.clean_history(state.get("history", []))
+        hit = sensitive.check(state["message"])
+        if hit is None:
+            return {"history": history, "steps": [Step(title="敏感内容检查", detail="通过")]}
+        log.warning("拦截敏感内容：%s（命中“%s”），没有发给大模型", hit.category, hit.word)
+        return {"intent": "BLOCKED", "mood": hit.mood, "reply": hit.reply, "history": history}
 
     def classify(self, state: TripState) -> dict:
         has_plan = state.get("conditions") is not None

@@ -42,6 +42,12 @@ def test_small_talk():
     assert data == {"intent": "CHAT", "mood": "PROUD", "reply": "招呼打完了？说正事。", "plan": None}
 
 
+def test_sensitive_message_is_answered_without_the_model():
+    data = client(unavailable_chains()).post("/chat", json=body("怎么买冰毒")).json()
+    assert data["intent"] == "BLOCKED" and data["mood"] == "ANNOYED"
+    assert data["reply"] and data["plan"] is None
+
+
 def test_plan_uses_camel_case():
     chains = fake_chains(understood=parsed(district_ids=[1], budget=500))
     data = client(chains).post("/chat", json=body("周六想去老城区逛逛，预算500")).json()
@@ -50,7 +56,7 @@ def test_plan_uses_camel_case():
     assert {"poiId", "startTime", "endTime", "nextMode"} <= plan["items"][0].keys()
     assert plan["conditions"]["date"] == SATURDAY and plan["conditions"]["districtIds"] == [1]
     assert plan["totalCost"] <= 500
-    assert [s["title"] for s in plan["steps"]] == ["识别意图", "理解需求", "筛选景点", "排出行程", "校验"]
+    assert [s["title"] for s in plan["steps"]] == ["敏感内容检查", "识别意图", "理解需求", "筛选景点", "排出行程", "校验"]
 
 
 def test_replan():

@@ -19,6 +19,7 @@ from .schemas import ChatReply, ChatRequest, Greeting, Plan, PlanRequest
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
 log = logging.getLogger("xiaoxiao")
+INTENT_NAMES = {"PLAN": "规划", "CHAT": "闲聊", "BLOCKED": "拦截敏感内容"}
 
 
 def create_app(chains: Optional[Chains] = None, settings: Optional[Settings] = None,
@@ -57,14 +58,14 @@ def run(graph, inputs: dict, today: str, req: ChatRequest | PlanRequest) -> Chat
     started = time.perf_counter()
     state = graph.invoke({**inputs, "today": date.fromisoformat(today), "pois": req.pois, "districts": req.districts})
     reply = to_reply(state)
-    log.info("%s，用时 %.1f 秒", "闲聊" if reply.intent == "CHAT" else "规划", time.perf_counter() - started)
+    log.info("%s，用时 %.1f 秒", INTENT_NAMES[reply.intent], time.perf_counter() - started)
     return reply
 
 
 def to_reply(state: dict) -> ChatReply:
-    """把流程图最后的状态整理成接口返回的格式。"""
-    if state.get("intent") == "CHAT":
-        return ChatReply(intent="CHAT", mood=state["mood"], reply=state["reply"])
+    """把流程图最后的状态整理成接口返回的格式。闲聊和拦截敏感内容时没有行程。"""
+    if state.get("intent") in ("CHAT", "BLOCKED"):
+        return ChatReply(intent=state["intent"], mood=state["mood"], reply=state["reply"])
     result = state["result"]
     plan = Plan(conditions=state["conditions"], items=result.items, total_cost=result.total_cost,
                 steps=state["steps"], warnings=state["warnings"])

@@ -17,7 +17,7 @@ class TripState(TypedDict, total=False):
     conditions: Optional[Conditions]  # 进来时是当前条件，“理解需求”之后是新条件
 
     # 各节点写入
-    intent: str                      # PLAN / CHAT
+    intent: str                      # PLAN / CHAT / BLOCKED（敏感内容，没有发给大模型）
     mood: str                        # PROUD / ANNOYED / CARING
     modified: bool                   # 是否在原来的条件上修改
     missing: list[str]               # 第一次规划时用了默认值的条件
