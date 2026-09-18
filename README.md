@@ -8,7 +8,7 @@
 |---|---|---|---|
 | 前端 | `tour-web` | React 19 + TypeScript + Vite + Ant Design | 5173 |
 | 后端 | `tour-server` | Spring Boot 3.5 + MyBatis + MySQL 8 | 8081 |
-| AI 服务 | `ai-service` | Python FastAPI + DeepSeek（没配 Key 时用规则和模板） | 8000 |
+| AI 服务 | `ai-service` | Python FastAPI + LangChain + LangGraph + DeepSeek | 8000 |
 
 浏览器只访问后端；后端把消息和景点数据交给 AI 服务，AI 服务识别意图、排行程、写小萧的回复。
 
@@ -38,6 +38,8 @@
 
 ### 2. 启动 AI 服务
 
+先复制 `ai-service/.env.example`，改名为 `.env`，填上 DeepSeek 的 Key（`DEEPSEEK_API_KEY=sk-...`）。这个文件不会提交到 git。
+
 ```bash
 cd ai-service
 python -m venv .venv
@@ -46,7 +48,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --port 8000
 ```
 
-要接 DeepSeek 时，复制 `.env.example` 为 `.env`，填上 `DEEPSEEK_API_KEY` 后重启。访问 http://localhost:8000/health 可以看到当前是 `deepseek` 还是 `rule`（规则）模式。
+访问 http://localhost:8000/health 可以看到小萧能不能用（Key 是否有效、余额）。
 
 ### 3. 启动后端
 
@@ -91,6 +93,7 @@ npm run build
 ## 常见问题
 
 - **小萧说“暂时不在线”**：AI 服务没启动，或者 8000 端口被占用。
+- **小萧说“暂时不能用了”**：DeepSeek 的 Key 无效或余额不足，后台顶部也会有提醒。
 - **后端启动报 Access denied**：`application-local.yml` 里的 MySQL 账号密码不对。
 - **npm 或 pip 下载慢**：可以换国内镜像，比如 `npm config set registry https://registry.npmmirror.com`、`pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple`。
 
