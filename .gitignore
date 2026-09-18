@@ -25,3 +25,7 @@ Thumbs.db
 
 # 日志
 *.log
+
+# nginx 程序（deploy.bat 第一次运行时自动下载，不入库）
+deploy/nginx/
+deploy/nginx.zip

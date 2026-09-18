@@ -35,7 +35,7 @@ if not exist "tour-web\node_modules" (
 rem ---------- check that the ports are free, for example not started twice ----------
 for %%p in (%WEB_PORT% %SERVER_PORT% %AI_PORT%) do (
   netstat -ano | findstr /r /c:":%%p .*LISTENING" >nul && (
-    echo [in use] port %%p is already in use - close the windows opened last time first
+    echo [in use] port %%p is already in use - run stop.bat first
     set NOT_READY=1
   )
 )
@@ -52,9 +52,11 @@ echo Starting:
 echo   AI service / Xiaoxiao   port %AI_PORT%
 echo   backend                 port %SERVER_PORT%
 echo   web                     port %WEB_PORT%
-start "YouXing AI %AI_PORT%" /d "%~dp0ai-service" cmd /k ".venv\Scripts\python.exe -m uvicorn app.main:app --port %AI_PORT%"
-start "YouXing Server %SERVER_PORT%" /d "%~dp0tour-server" cmd /k ".\mvnw.cmd spring-boot:run"
-start "YouXing Web %WEB_PORT%" /d "%~dp0tour-web" cmd /k "npm run dev"
+rem The title is also written into each window's command line, so stop.bat can find the window
+rem even after a program such as npm changes the window title.
+start "YouXing AI %AI_PORT%" /d "%~dp0ai-service" cmd /k "title YouXing AI %AI_PORT%&& .venv\Scripts\python.exe -m uvicorn app.main:app --port %AI_PORT%"
+start "YouXing Server %SERVER_PORT%" /d "%~dp0tour-server" cmd /k "title YouXing Server %SERVER_PORT%&& .\mvnw.cmd spring-boot:run"
+start "YouXing Web %WEB_PORT%" /d "%~dp0tour-web" cmd /k "title YouXing Web %WEB_PORT%&& npm run dev"
 
 rem ---------- wait for the backend, then open the browser; give up after 5 minutes ----------
 echo.
@@ -74,5 +76,5 @@ curl --noproxy "*" -s -o nul http://localhost:%SERVER_PORT%/api/user/districts |
 start "" http://localhost:%WEB_PORT%
 echo.
 echo All started: http://localhost:%WEB_PORT%
-echo Close the three YouXing windows to stop the services. This window can be closed now.
+echo Close the three YouXing windows or run stop.bat to stop the services. This window can be closed now.
 pause
