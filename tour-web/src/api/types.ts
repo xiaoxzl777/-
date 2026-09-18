@@ -123,7 +123,8 @@ export interface Plan {
 }
 
 export interface ChatReply {
-  intent: 'PLAN' | 'CHAT';
+  /** BLOCKED：命中敏感内容，没有发给大模型，小萧用写好的话回复 */
+  intent: 'PLAN' | 'CHAT' | 'BLOCKED';
   mood: Exclude<Mood, 'THINKING'>;
   reply: string;
   plan: Plan | null;

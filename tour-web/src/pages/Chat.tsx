@@ -19,7 +19,7 @@ interface Message {
   content: string;
   mood?: Mood;
   /** GREETING 表示主动问候 */
-  intent?: 'PLAN' | 'CHAT' | 'GREETING';
+  intent?: 'PLAN' | 'CHAT' | 'BLOCKED' | 'GREETING';
   steps?: Step[];
   status?: 'pending' | 'error';
   /** 出错时点“重试”要做的事 */
@@ -306,6 +306,7 @@ export default function Chat() {
                     小萧
                     {m.intent === 'PLAN' && <span className="tag is-accent">识别为：规划行程</span>}
                     {m.intent === 'CHAT' && <span className="tag is-muted">识别为：闲聊</span>}
+                    {m.intent === 'BLOCKED' && <span className="tag is-muted">识别为：敏感内容</span>}
                   </div>
                   {m.status === 'pending' && (
                     <div className="bubble-ai is-typing" aria-label="小萧正在想"><i /><i /><i /></div>
