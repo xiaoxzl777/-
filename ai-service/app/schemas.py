@@ -7,6 +7,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 Pace = Literal["RELAXED", "NORMAL", "TIGHT"]
+
+# 兴趣标签，要和数据库里景点的标签一致
+INTERESTS = ["历史人文", "岭南建筑", "博物馆", "自然风光", "城市地标", "夜景", "拍照", "美食", "购物", "宗教文化", "动物", "亲子"]
 Mood = Literal["PROUD", "ANNOYED", "CARING"]
 Intent = Literal["PLAN", "CHAT"]
 Mode = Literal["WALK", "METRO", "TAXI"]

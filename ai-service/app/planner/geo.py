@@ -4,7 +4,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .schemas import Poi
+from ..schemas import Poi
 
 WALK_MAX_METERS = 1500   # 1.5 公里内步行
 METRO_MAX_METERS = 10000  # 10 公里内坐地铁，更远打车

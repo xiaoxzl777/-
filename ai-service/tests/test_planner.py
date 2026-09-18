@@ -1,6 +1,6 @@
-from app import planner
+from app.planner import greedy as planner
+from app.planner.timeutil import to_minutes
 from app.schemas import Conditions
-from app.timeutil import to_minutes
 from tests.sample_data import DISTRICTS, MONDAY, POIS, SATURDAY
 
 BY_ID = {p.id: p for p in POIS}

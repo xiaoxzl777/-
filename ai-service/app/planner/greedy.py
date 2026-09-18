@@ -1,4 +1,4 @@
-"""贪心排程：从出发时间开始一站一站往后排，排完再逐站校验。
+"""贪心排程：从出发时间开始一站一站往后排。排完的校验在 verify.py 里单独做。
 
 规则见需求分析 3.2 和第 5 节：
 - 到达时已开门、没过停止入场时间，离开时不晚于关门，当天不是闭馆日；
@@ -13,8 +13,8 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Optional
 
+from ..schemas import Conditions, District, PlanItem, Poi
 from . import geo
-from .schemas import Conditions, District, PlanItem, Poi, Step
 from .timeutil import to_hhmm, to_minutes, weekday_name
 
 LUNCH_START = 11 * 60 + 30   # 午餐最早 11:30 开始
@@ -46,8 +46,9 @@ class Visit:
 class PlanResult:
     items: list[PlanItem]
     total_cost: float
-    steps: list[Step]
     warnings: list[str]
+    filter_detail: str   # “筛选景点”这一步的说明
+    arrange_detail: str  # “排出行程”这一步的说明
 
 
 def open_windows(poi: Poi, day: date) -> list[tuple[int, int, int]]:
@@ -96,8 +97,6 @@ class DayPlanner:
     # ---------- 主流程 ----------
 
     def run(self) -> PlanResult:
-        steps = [Step(title="筛选景点", detail=self._filter_detail())]
-
         full_day = next((p for p in self.scenic if p.full_day and p.id in self.cond.must_poi_ids), None)
         if full_day is None or not self._plan_full_day(full_day):
             self._plan_greedy([p for p in self.scenic if not p.full_day])
@@ -109,16 +108,12 @@ class DayPlanner:
             self.warnings.append("按现在的条件排不出景点，可以换个日期或放宽条件")
 
         self._check_must_visits()
-        problems = self._verify()
-        steps.append(Step(title="排出行程", detail=self._arrange_detail()))
-        steps.append(Step(title="校验", detail=self._verify_detail(problems)))
-        self.warnings.extend(f"校验发现：{p}" for p in problems)
-
         return PlanResult(
             items=self._build_items(),
             total_cost=round(self.spent, 2),
-            steps=steps,
             warnings=self.warnings,
+            filter_detail=self._filter_detail(),
+            arrange_detail=self._arrange_detail(),
         )
 
     def _plan_greedy(self, candidates: list[Poi]) -> None:
@@ -319,21 +314,6 @@ class DayPlanner:
             return "要玩一整天，当天时间不够"
         return "当天时间排不下"
 
-    def _verify(self) -> list[str]:
-        """独立复核一遍排出来的行程。"""
-        problems = []
-        for i, v in enumerate(self.visits):
-            continued = any(w.poi.id == v.poi.id for w in self.visits[:i])
-            if not continued and self._fit(v.poi, v.start, v.end - v.start, 0) != v.start:
-                problems.append(f"{v.poi.name}不在开放时间内")
-            if i > 0 and self.visits[i - 1].end + (v.leg.minutes if v.leg else 0) > v.start:
-                problems.append(f"{self.visits[i - 1].poi.name}到{v.poi.name}的时间来不及")
-            if v.end > self.day_end:
-                problems.append(f"{v.poi.name}结束得太晚")
-        if self._over_budget(0):
-            problems.append("总花费超出预算")
-        return problems
-
     def _build_items(self) -> list[PlanItem]:
         items = []
         for i, v in enumerate(self.visits):
@@ -357,7 +337,7 @@ class DayPlanner:
         text = f"{weekday_name(self.day)}开放的景点 {len(self.scenic)} 个、餐厅 {len(self.restaurants)} 家"
         names = [self.district_names[i] for i in self.cond.district_ids if i in self.district_names]
         if names:
-            text += "，优先" + "、".join(names)
+            text += "，只在" + "、".join(names) + "里挑"
         return text
 
     def _arrange_detail(self) -> str:
@@ -368,10 +348,3 @@ class DayPlanner:
         if self.full_day is not None:
             return f"{self.full_day.name}需要一整天" + ("，中午在附近吃饭后接着玩" if lunch else "")
         return f"按开放时间和路程依次安排 {count} 个景点" + ("，午餐 1 次" if lunch else "")
-
-    def _verify_detail(self, problems: list[str]) -> str:
-        if problems:
-            return "发现问题：" + "；".join(problems)
-        if self.cond.budget is None:
-            return "开放时间、衔接时间都已通过，预算不限"
-        return "开放时间、衔接时间、预算都已通过"

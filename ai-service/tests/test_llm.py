@@ -1,84 +1,72 @@
-"""DeepSeek 接入的测试：不真正联网，用固定的返回内容检查解析、清洗和兜底。"""
-import json
-import random
+"""大模型出错时的分类，以及后台状态查询。不联网：用构造出来的异常和假的 HTTP 响应。"""
+import httpx
+import openai
+import pytest
+from langchain_core.runnables import RunnableLambda
 
-from app.llm import DeepSeek
-from app.schemas import ChatRequest, Conditions
-from app.service import XiaoXiao
-from tests.sample_data import DISTRICTS, POIS, SATURDAY, TODAY
+from app import status
+from app.config import Settings
+from app.llm import RETRY, UNAVAILABLE, LlmError, invoke
 
-
-class FakeDeepSeek(DeepSeek):
-    def __init__(self, *answers):
-        super().__init__(api_key="test-key")
-        self.answers = list(answers)
-        self.calls = []
-
-    def _complete(self, messages, json_mode, max_tokens=800):
-        self.calls.append((messages, json_mode))
-        return self.answers.pop(0) if self.answers else None
+REQUEST = httpx.Request("POST", "https://api.deepseek.com/chat/completions")
+SETTINGS = Settings(api_key="sk-test", base_url="https://api.deepseek.com", model="deepseek-flash", timeout=5)
 
 
-def request(message, conditions=None):
-    return ChatRequest(message=message, conditions=conditions, today=TODAY.isoformat(), districts=DISTRICTS, pois=POIS)
+def raising(error):
+    def run(_):
+        raise error
+    return RunnableLambda(run)
 
 
-def test_chat_intent_uses_model_reply():
-    llm = FakeDeepSeek(json.dumps({"intent": "CHAT", "mood": "ANNOYED", "reply": "喂，我只管广州行程。", "conditions": None}))
-    result = llm.understand(request("帮我写作业"))
-    assert result.intent == "CHAT"
-    assert result.mood == "ANNOYED"
-    assert result.reply == "喂，我只管广州行程。"
+def status_error(cls, code):
+    return cls("出错了", response=httpx.Response(code, request=REQUEST), body=None)
 
 
-def test_plan_conditions_are_cleaned():
-    answer = {
-        "intent": "PLAN", "mood": "PROUD", "reply": "",
-        "conditions": {"date": "2020-01-01", "startTime": "9点", "adults": 0, "seniors": 2, "children": 0, "budget": -5,
-                       "pace": "RELAXED", "districtIds": [1, 99], "mustPoiIds": [1, 3, 999], "avoidPoiIds": [3],
-                       "interests": ["历史人文", "瞎编的兴趣"]},
-        "missing": ["date"], "notes": ["xx暂未收录，没有排进去"],
-    }
-    result = FakeDeepSeek(json.dumps(answer)).understand(request("周六带爸妈去陈家祠"))
-    c = result.conditions
-    assert result.intent == "PLAN"
-    assert c.date == "2026-09-18"          # 过去的日期改成明天
-    assert c.start_time == "09:00"          # 格式不对用默认
-    assert c.adults == 1 and c.seniors == 2
-    assert c.budget == 0
-    assert c.district_ids == [1]            # 不存在的片区去掉
-    assert c.must_poi_ids == [1]            # 不存在的、同时在“不去”里的都去掉
-    assert c.avoid_poi_ids == [3]
-    assert c.interests == ["历史人文"]
-    assert result.missing == ["date"]
-    assert result.notes == ["xx暂未收录，没有排进去"]
+@pytest.mark.parametrize("error, code", [
+    (status_error(openai.AuthenticationError, 401), UNAVAILABLE),
+    (status_error(openai.APIStatusError, 402), UNAVAILABLE),
+    (status_error(openai.RateLimitError, 429), RETRY),
+    (status_error(openai.InternalServerError, 500), RETRY),
+    (openai.APITimeoutError(request=REQUEST), RETRY),
+    (ValueError("返回的内容不符合格式"), RETRY),
+])
+def test_errors_are_classified(error, code):
+    with pytest.raises(LlmError) as info:
+        invoke(raising(error), {})
+    assert info.value.code == code
 
 
-def test_follow_up_keeps_fields_the_model_left_out():
-    base = Conditions(date=SATURDAY, budget=500, district_ids=[1])
-    answer = {"intent": "PLAN", "conditions": {"seniors": 2}, "missing": ["date"], "notes": []}
-    result = FakeDeepSeek(json.dumps(answer)).understand(request("带上爸妈", conditions=base))
-    assert result.conditions.date == SATURDAY
-    assert result.conditions.budget == 500
-    assert result.conditions.seniors == 2
-    assert result.missing == []  # 已有条件时不算“用了默认值”
+def test_success_passes_through():
+    assert invoke(RunnableLambda(lambda x: x["a"] + 1), {"a": 1}) == 2
 
 
-def test_broken_output_falls_back_to_rules():
-    llm = FakeDeepSeek("这不是 JSON", None)
-    xiaoxiao = XiaoXiao(llm=llm, rng=random.Random(1))
-    reply = xiaoxiao.chat(request("周六想去老城区逛逛"))
-    assert reply.intent == "PLAN"           # 规则识别出来的
-    assert reply.plan and reply.plan.items
-    assert "官网" in reply.reply             # 写回复也失败了，用的模板
+@pytest.fixture
+def fake_balance(monkeypatch):
+    def use(response):
+        def get(url, **kwargs):
+            if isinstance(response, Exception):
+                raise response
+            return response
+        monkeypatch.setattr(httpx, "get", get)
+    return use
 
 
-def test_reply_gets_official_site_notice():
-    llm = FakeDeepSeek("哼，排好了，上午先去陈家祠。")
-    text = llm.write_reply({"items": [{"place": "陈家祠"}], "warnings": []})
-    assert text.endswith("开放时间和票价以官网为准。")
+def test_status_without_key():
+    result = status.check(Settings(api_key="", base_url="x", model="m", timeout=5))
+    assert result["available"] is False and "没有配置" in result["problem"]
 
 
-def test_disabled_without_key():
-    assert not DeepSeek(api_key="").enabled
-    assert XiaoXiao(llm=DeepSeek(api_key="")).mode == "rule"
+def test_status_ok(fake_balance):
+    fake_balance(httpx.Response(200, json={"is_available": True, "balance_infos": [{"total_balance": "5.32"}]}))
+    assert status.check(SETTINGS) == {"status": "ok", "available": True, "problem": None, "balance": "5.32"}
+
+
+@pytest.mark.parametrize("response, problem", [
+    (httpx.Response(200, json={"is_available": False, "balance_infos": [{"total_balance": "0.00"}]}), "DeepSeek 余额不足，请充值"),
+    (httpx.Response(401, json={}), "DeepSeek Key 无效，请检查 ai-service/.env"),
+    (httpx.ConnectError("连不上"), "连不上 DeepSeek，请检查网络"),
+])
+def test_status_problems(fake_balance, response, problem):
+    fake_balance(response)
+    result = status.check(SETTINGS)
+    assert result["available"] is False and result["problem"] == problem

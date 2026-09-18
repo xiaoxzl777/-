@@ -1,12 +1,17 @@
-import random
-
 from fastapi.testclient import TestClient
 
+from app.chains import unavailable_chains
+from app.config import Settings
+from app.llm import RETRY, LlmError
 from app.main import create_app
-from app.service import XiaoXiao
+from tests.fakes import fake_chains, parsed
 from tests.sample_data import DISTRICTS, POIS, SATURDAY, TODAY
 
-client = TestClient(create_app(XiaoXiao(rng=random.Random(7))))
+SETTINGS = Settings(api_key="test", base_url="http://deepseek.test", model="deepseek-flash", timeout=5)
+
+
+def client(chains=None, status=None):
+    return TestClient(create_app(chains or fake_chains(), SETTINGS, lambda: status or {"status": "ok", "available": True}))
 
 
 def body(message=None, conditions=None, history=None):
@@ -22,57 +27,52 @@ def body(message=None, conditions=None, history=None):
     return data
 
 
-def test_health():
-    assert client.get("/health").json() == {"status": "ok", "llm": "rule"}
+def test_health_reports_status():
+    problem = {"status": "ok", "available": False, "problem": "DeepSeek 余额不足，请充值", "balance": "0.00"}
+    assert client(status=problem).get("/health").json() == problem
 
 
-def test_greeting():
-    data = client.get("/greeting", params={"nickname": "小林"}).json()
-    assert data["mood"] == "PROUD"
-    assert data["reply"]
+def test_greeting_does_not_need_the_model():
+    data = client(unavailable_chains()).get("/greeting", params={"nickname": "小林"}).json()
+    assert data["mood"] == "PROUD" and data["reply"]
 
 
-def test_small_talk_does_not_plan():
-    data = client.post("/chat", json=body("你好呀")).json()
-    assert data["intent"] == "CHAT"
-    assert data["plan"] is None
-    assert data["reply"]
+def test_small_talk():
+    data = client(fake_chains(intent="CHAT")).post("/chat", json=body("你好呀")).json()
+    assert data == {"intent": "CHAT", "mood": "PROUD", "reply": "招呼打完了？说正事。", "plan": None}
 
 
-def test_other_city_is_refused():
-    data = client.post("/chat", json=body("杭州有什么好玩的")).json()
-    assert data["intent"] == "CHAT"
-    assert data["mood"] == "ANNOYED"
-    assert "杭州" in data["reply"]
-
-
-def test_plan_then_follow_up():
-    first = client.post("/chat", json=body("周六想去老城区逛逛，预算500")).json()
-    assert first["intent"] == "PLAN"
-    plan = first["plan"]
-    assert plan["items"] and {"poiId", "startTime", "endTime", "nextMode"} <= plan["items"][0].keys()
-    assert plan["conditions"]["date"] == SATURDAY
-    assert "官网" in first["reply"]
+def test_plan_uses_camel_case():
+    chains = fake_chains(understood=parsed(district_ids=[1], budget=500))
+    data = client(chains).post("/chat", json=body("周六想去老城区逛逛，预算500")).json()
+    plan = data["plan"]
+    assert data["intent"] == "PLAN"
+    assert {"poiId", "startTime", "endTime", "nextMode"} <= plan["items"][0].keys()
+    assert plan["conditions"]["date"] == SATURDAY and plan["conditions"]["districtIds"] == [1]
+    assert plan["totalCost"] <= 500
     assert [s["title"] for s in plan["steps"]] == ["识别意图", "理解需求", "筛选景点", "排出行程", "校验"]
 
-    history = [{"role": "user", "content": "周六想去老城区逛逛，预算500"},
-               {"role": "assistant", "content": first["reply"]}]
-    second = client.post("/chat", json=body("带上爸妈", plan["conditions"], history)).json()
-    assert second["intent"] == "PLAN"
-    cond = second["plan"]["conditions"]
-    assert cond["date"] == SATURDAY and cond["seniors"] == 2 and cond["budget"] == 500
-    assert second["plan"]["totalCost"] <= 500
 
-
-def test_replan_with_edited_conditions():
-    conditions = {"date": SATURDAY, "startTime": "09:00", "adults": 1, "seniors": 0, "children": 0,
-                  "budget": None, "pace": "NORMAL", "districtIds": [1], "mustPoiIds": [],
-                  "avoidPoiIds": [1], "interests": []}
-    data = client.post("/plan", json=body(conditions=conditions)).json()
+def test_replan():
+    conditions = {"date": SATURDAY, "startTime": "09:00", "adults": 1, "seniors": 0, "children": 0, "budget": None,
+                  "pace": "NORMAL", "districtIds": [1], "mustPoiIds": [], "avoidPoiIds": [1], "interests": []}
+    data = client().post("/plan", json=body(conditions=conditions)).json()
     assert data["intent"] == "PLAN"
     assert all(it["poiId"] != 1 for it in data["plan"]["items"])
-    assert data["plan"]["steps"][0]["title"] == "按修改后的条件"
+
+
+def test_timeout_is_returned_as_503():
+    chains = fake_chains(understood=LlmError(RETRY, "请求超时了，再试一次吧"))
+    resp = client(chains).post("/chat", json=body("周六去老城区"))
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": {"code": "TIMEOUT", "message": "请求超时了，再试一次吧"}}
+
+
+def test_missing_key_asks_admin_for_help():
+    resp = client(unavailable_chains()).post("/chat", json=body("你好"))
+    assert resp.status_code == 503
+    assert resp.json()["detail"] == {"code": "LLM_UNAVAILABLE", "message": "小萧暂时不能用了，已经通知管理员"}
 
 
 def test_bad_request_is_rejected():
-    assert client.post("/chat", json={"message": "hi"}).status_code == 422
+    assert client().post("/chat", json={"message": "hi"}).status_code == 422
