@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class AiClient {
 
-    static final String OFFLINE = "小萧暂时不在线，请先启动 AI 服务（端口 7777）";
+    static final String OFFLINE = "小萧暂时不在线，请先启动 AI 服务";
     static final String TIMEOUT = "请求超时了，再试一次吧";
     static final String FAILED = "小萧这边出了点问题，请稍后再试";
 

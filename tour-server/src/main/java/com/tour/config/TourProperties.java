@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * application.yml 里 tour 开头的配置。
+ * application.yml 里 tour 开头的配置。值只写在 application.yml，这里不再写默认值。
  */
 @Data
 @ConfigurationProperties(prefix = "tour")
@@ -24,13 +24,13 @@ public class TourProperties {
     @Data
     public static class Jwt {
         private String secret;
-        private int expireDays = 7;
+        private int expireDays;
     }
 
     /** Python AI 服务 */
     @Data
     public static class Ai {
-        private String baseUrl = "http://localhost:7777";
-        private int timeoutSeconds = 60;
+        private String baseUrl;
+        private int timeoutSeconds;
     }
 }

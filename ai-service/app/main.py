@@ -1,4 +1,4 @@
-"""小萧 AI 服务的入口。在 ai-service 目录下启动：uvicorn app.main:app --port 7777"""
+"""小萧 AI 服务的接口。启动方式见 app/__main__.py（在 ai-service 目录下运行 python -m app）。"""
 from __future__ import annotations
 
 import logging
